@@ -1,0 +1,207 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Jasmine Spec BatmanRunner</title>
+  <!-- CSS Dependencies --><% css.forEach(function(style){ %>
+  <link rel="stylesheet" type="text/css" href="<%= style %>">
+  <% }) %>
+  <!-- JS Dependencies --><% with (scripts) { %>
+    <% [].concat(jasmine, vendor, helpers).forEach(function(script){ %>
+    <script src="<%= script %>"></script>
+    <% }) %>
+  <% }; %>
+
+  <!-- preloadScript: Requirejs -->
+  <script src="<%= temp %>/require.js"></script>
+  <script>
+    require.onError = function(error) {
+      var message = error.requireType + ': ';
+      if (error.requireType === 'scripterror' || error.requireType === 'notloaded' && error.requireModules) {
+        message += 'Illegal path or script error: ' + '[\'' + error.requireModules.join("', '") + '\']';
+      } else {
+        message += error.message;
+      }
+      console.log(error.stack);
+      throw Error(message);
+    };
+  </script>
+
+  <style type="text/css">
+      #HTMLReporter{
+        background: #eee !important;
+      }
+
+      #HTMLReporter .passingAlert {
+        background-color: #849F3A;
+      }
+      #HTMLReporter .summary .specSummary.passed a {
+       color: #849F3A;
+      }
+  </style>
+
+
+
+</head>
+<body>
+    <script type="text/javascript">
+      window.TESTING = true;
+      window.TEST_EXECUTION_TIMEOUT = 120000;
+      window.TEST_LOAD_TIMEOUT = 10000; // MAX LOAD TIME
+
+      window.specs = ['<%= [].concat(scripts.specs).join("','") %>'];
+      window.configuration = <%= serializeRequireConfig(options.requireConfig) %>;
+
+     window.runTests = function(specs) {
+        if(specs === undefined){
+          specs = window.specs;
+        }
+
+        console.log('Base url');
+        console.log(!!configuration.baseUrl);
+
+        if (!configuration.baseUrl) {
+          configuration.baseUrl = 'webapp/devapp/app';
+        }
+
+        if (!configuration.paths) {
+          configuration.paths = {};
+        }
+
+        if (!configuration.paths.specs) {
+          var specDir = 'webapp/test';
+          // var specDir = 'test';
+          if (!specDir.match(/^file/)) {
+            specDir = '/'+specDir;
+          }
+          configuration.paths.specs = specDir;
+        }
+
+
+        configuration.paths.tests = 'webapp/devapp/test' //'/test';
+
+        var req = requirejs.config(configuration);
+
+        var preloads = ['sinon', 'specHelper', 'require-css', '<%=scripts.reporters.join("','") %>'];
+
+        var initialFullPathAllOurSources = [<% scripts.src.forEach(function(script, i){ %><% script = script.replace(/\\/g, '/') // replace all backward slashes to forward slash %>
+          '<%= script %>' <%= i < scripts.src.length-1 ? ',' : '' %><% }) %>
+        ];
+
+
+        //var allOurSources = ($sourcesList$)
+        var allOurSources = (initialFullPathAllOurSources)
+          .filter(function(item){
+            return !!item.match(/.*app\/modules\/.*|.*app\/services\/.*|.*app\/widgets\/.*/);
+          })
+        ;
+
+        var badPrefix = 'src/app/',
+          i = 0
+        ;
+
+        for(i = 0;i < allOurSources.length; i++) {
+          if(allOurSources[i].indexOf(badPrefix) === 0){
+            allOurSources[i] = allOurSources[i].replace(badPrefix, '');
+          }
+
+          var m = allOurSources[i].match(/modules\/([^\/]*)\/controllers\/(.*)/);
+          if(m != null){
+            allOurSources[i] = 'module!' + m[1] + ((m[1]+'.js' == m[2]) ? '' : '/' + m[2].replace('.js', ''));
+          }
+          var m = allOurSources[i].match(/modules\/([^\/]*)\/models\/(.*)/);
+          if(m != null){
+            allOurSources[i] = 'ut_model!' + m[1] + '/' + m[2].replace('.js', '');
+          }
+          var m = allOurSources[i].match(/modules\/([^\/]*)\/helpers\/(.*)/);
+          if(m != null){
+            allOurSources[i] = 'ut_helper!' + m[1] + '/' + m[2].replace('.js', '');
+          }
+          var m = allOurSources[i].match(/modules\/([^\/]*)\/views\/(.*)/);
+          if(m != null){
+            allOurSources[i] = 'ut_view!' + m[1] + '/' + m[2].replace('.js', '');
+          }
+          var m = allOurSources[i].match(/modules\/([^\/]*)\/widgets\/(.*)/);
+          if(m != null){
+            allOurSources[i] = 'widget!' + m[1] + '/' + m[2].replace('.js', '');
+          }
+          var m = allOurSources[i].match(/widgets\/([^\/]*)\/(.*)/);
+          if(m != null){
+            allOurSources[i] = 'widget!' + m[1];
+          }
+          var m = allOurSources[i].match(/services\/([^\/]*)\/(.*)/);
+          if(m != null){
+            allOurSources[i] = 'service!' + m[1] + ((m[1]+'.js' == m[2]) ? '' : '/' + m[2].replace('.js', ''));
+          }
+
+        }
+
+        var badPrefix = 'tests/',
+          i = 0
+        ;
+        for(i = 0;i < specs.length; i++){
+          if(specs[i].indexOf(badPrefix) === 0){
+            specs[i] = specs[i].replace(badPrefix, '/tests/');
+
+          }
+        }
+
+        req([
+          'durandal/system',
+          'durandal/app',
+          'durandal/events',
+          'durandal/composition',
+          'durandal/binder',
+          'durandal/viewLocator',
+          'jquery',
+          'durandal/events',
+          'durandal/system',
+          'plugins/widget',
+          'durandal/events',
+          'durandal/viewEngine'
+        ], function(){
+
+        req(['jasmine-alone', 'jasmine-durandal'], function() {
+          req(preloads, function() {
+
+            window.reporter = jasmine.getEnv().reporter.subReporters_[0];
+
+            isolatedRunner.setSpecs(specs);
+            isolatedRunner.run();
+
+            if(!window.reporter){
+              if (!!window._phantom) {
+                // console.log('PhantomJS reporter');
+                // window.reporter =  new PhantomReporter();
+              } else {
+
+                window.reporter = new jasmine.HtmlReporter();
+                //window.reporter = new jasmine.$reporter$();
+              }
+
+              jasmine.getEnv().addReporter(window.reporter);
+
+
+
+              if ('HtmlReporter' == 'HtmlReporter') {
+                jasmine.getEnv().specFilter = function(spec) {
+                  return window.reporter.specFilter(spec);
+                };
+              }
+              //Don't do live updates when running through HTMLUnit
+              if ('HtmlReporter' == 'JsApiReporter'){
+                jasmine.getEnv().updateInterval = Number.MAX_VALUE;
+              }
+            }
+          });
+        });
+
+        });
+      }
+
+
+    //New Runner
+    runTests();
+    </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+	"baseUrl": "webapp/devapp/app",
+	"paths" : {
+		"jquery": "../lib/jquery/jquery-1.9.1",
+		"knockout": "../lib/knockout/knockout-2.3.0.debug",
+		"text": "../lib/require/text",
+		"durandal": "../lib/durandal/js",
+		"plugins": "../lib/durandal/js/plugins",
+		"transitions": "../lib/durandal/js/transitions",
+
+		"sinon": "../../tests/jasmine/lib/sinon-1.7.3",
+
+		"specHelper": "../../tests/jasmine/js/specHelper",
+		"require-css": "../../tests/lib/utils/require-css",
+		"jasmine-durandal": "/tests/lib/jasmine-durandal/jasmine-durandal-1.3x",
+		"jasmine-alone": "../../tests/jasmine/js/jasmine-alone"
+	}
+}

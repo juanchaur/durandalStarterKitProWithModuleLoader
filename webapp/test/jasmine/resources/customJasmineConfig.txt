@@ -1,0 +1,9 @@
+paths: {
+    'text': '../scripts/requirejs-text/text'
+},
+
+baseUrl: '../../src/test/jasmine/lib/jasmine-1.3.1'
+ 
+
+
+    
